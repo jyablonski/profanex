@@ -8,7 +8,7 @@ Profanex is a Python library for detecting and masking profanity in text using a
 - Masking profanity with configurable styles (e.g., stars)
 - Load banned and excluded words from YAML files or directly via Python sets
 - Excludes specific words from masking (e.g., “on”, “no”)
-- Simple API with has_profanity() and clean() methods
+- Simple API with `has_profanity()` and `clean()` methods
 
 ## Installation
 
