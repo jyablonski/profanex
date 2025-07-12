@@ -12,3 +12,4 @@ wheels/
 .vscode
 htmlcov/
 .coverage
+.tox/
