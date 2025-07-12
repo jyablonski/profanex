@@ -1,0 +1,19 @@
+services:
+
+  profanex_test_runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_DEV_DEPENDENCIES: "true"
+    image: profanex_test_runner
+    pull_policy: never
+    container_name: profanex_test_runner
+    environment:
+      - ENV_TYPE=docker_dev
+    volumes:
+      - ${PWD}/pyproject.toml/:/home/appuser/pyproject.toml
+      - ${PWD}/profanex/:/home/appuser/profanex
+      - ${PWD}/tests/:/home/appuser/tests
+    command: python3 -m pytest -vv --cov-report term --cov=profanex --color=yes
+

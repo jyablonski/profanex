@@ -1,0 +1,57 @@
+name: profanex CI / CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  UV_VERSION: "0.7.19"
+
+jobs:
+  ci_pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: make test
+
+  # cd_pipeline:
+  #   runs-on: ubuntu-latest
+  #   needs: ci_pipeline
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+  #   steps:
+  #     - name: Checkout Repo
+  #       uses: actions/checkout@v4
+
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@v5
+  #       with:
+  #         version: ${{ env.UV_VERSION }}
+  #         enable-cache: true
+
+  #     - name: Build Package
+  #       run: uv build --no-cache
+
+  #     - name: Publish Package to PyPI
+  #       run: uv publish --token ${{ secrets.PYPI_TOKEN }}
+
+  # deploy-alert:
+  #   needs: cd_pipeline
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Slack Deploy Notification
+  #       uses: jyablonski/actions/slack_alert@v1
+  #       with:
+  #         message: ${{ job.status == 'success' && 'profanex Deployed to Production' || 'profanex Failed to deploy properly' }}
+  #         title: ${{ job.status == 'success' && 'profanex Deploy Pipeline' || 'profanex Deploy Failure' }}
+  #         color: ${{ job.status == 'success' && 'good' || 'danger' }}
+  #         webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
