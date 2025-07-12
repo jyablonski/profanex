@@ -33,7 +33,7 @@ classifiers = [
 dependencies = ["pyyaml>=6.0.2", "rapidfuzz>=3.13.0"]
 
 [dependency-groups]
-dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1", "tox>=4.27.0"]
+dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
 local = ["ipykernel>=6.29.5", "mypy>=1.16.1", "ruff>=0.12.3"]
 
 [tool.uv]
@@ -62,16 +62,17 @@ filterwarnings = [
 testpaths = ["tests"]
 addopts = "-v"
 
-[tool.tox]
-requires = ["tox>=4.27.0"]
-legacy_tox_ini = """
-[tox]
-envlist = py{310,311,312,313}
+# not needed
+# [tool.tox]
+# requires = ["tox>=4.27.0"]
+# legacy_tox_ini = """
+# [tox]
+# envlist = py{310,311,312,313}
 
-[testenv]
-deps = 
-    pytest
-    pytest-cov
-commands = 
-    pytest -vv --cov-report=term --cov=profanex --color=yes
-"""
+# [testenv]
+# deps = 
+#     pytest
+#     pytest-cov
+# commands = 
+#     pytest -vv --cov-report=term --cov=profanex --color=yes
+# """
