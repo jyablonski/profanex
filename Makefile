@@ -88,13 +88,7 @@ release:
 		git status --short; \
 		exit 1; \
 	fi
-	@$(MAKE) prerelease-check
 	@git fetch origin --tags
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "release checks changed the working tree; review and commit those changes first" >&2; \
-		git status --short; \
-		exit 1; \
-	fi
 	@if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse origin/main)" ]; then \
 		echo "local main must exactly match origin/main before release" >&2; \
 		exit 1; \

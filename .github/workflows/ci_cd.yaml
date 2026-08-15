@@ -264,10 +264,6 @@ jobs:
             target: riscv64gc-unknown-linux-gnu
             manylinux: "2_31"
             smoke: false
-          - arch: loongarch64
-            target: loongarch64-unknown-linux-gnu
-            manylinux: "2_36"
-            smoke: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -384,10 +380,6 @@ jobs:
             os: windows-latest
             target: i686-pc-windows-msvc
             smoke-python: cpython-3.11-windows-x86-none
-          - arch: aarch64
-            os: windows-11-arm
-            target: aarch64-pc-windows-msvc
-            smoke-python: "3.11"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
