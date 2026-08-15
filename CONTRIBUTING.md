@@ -30,6 +30,8 @@ make accuracy   # reproduce policy-contract and synthetic-evasion metrics
 make benchmark-competitors  # run pinned product-default comparisons on Python 3.12
 make deadcode   # vulture (Python) + cargo-machete (Rust deps)
 make check      # format, lint, type-check, deadcode, and test
+make prerelease-check  # validate release metadata and run checks, docs, and package builds
+make release    # from clean, current main: validate, create, and push the release tag
 ```
 
 ## Project layout
@@ -63,4 +65,4 @@ uv run pytest
 
 Keep public behavior in `fixtures/` when possible so API tests and benchmarks use the same inputs. Update the README or changelog when public API, defaults, packaging, or lexicon policy changes.
 
-Maintainers should follow the [release checklist](docs/release-checklist.md).
+Before opening a release pull request, run `make prerelease-check`. After that pull request is merged and `main` is green, maintainers can run `make release`; its tag push starts the publishing workflow.

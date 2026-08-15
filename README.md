@@ -144,7 +144,6 @@ Use `analyze` / `analyze_many` when both a flag and cleaned text are needed; the
 - [Limitations and threat model](https://jyablonski.github.io/profanex/limitations/)
 - [Fixture schema](https://github.com/jyablonski/profanex/blob/main/fixtures/README.md)
 - [Lexicon provenance](https://github.com/jyablonski/profanex/blob/main/profanex/data/PROVENANCE.md) — upstream attribution, modifications, and data licensing
-- [Release checklist](https://jyablonski.github.io/profanex/release-checklist/)
 
 ## License
 

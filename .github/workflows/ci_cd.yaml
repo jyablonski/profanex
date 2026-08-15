@@ -52,23 +52,8 @@ jobs:
       - name: Install quality dependencies
         run: uv sync --locked --only-group quality --no-install-project
 
-      - name: Check package versions agree
-        run: |
-          uv run --no-sync python - <<'PY'
-          import tomllib
-          from pathlib import Path
-
-          py_version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
-          cargo_versions = {
-              path: tomllib.loads(Path(path).read_text())["package"]["version"]
-              for path in ("Cargo.toml", "crates/profanex-core/Cargo.toml")
-          }
-          normalized = {version.replace("-rc.", "rc") for version in cargo_versions.values()}
-          if normalized != {py_version}:
-              raise SystemExit(
-                  f"package version mismatch: pyproject.toml={py_version}, Cargo={cargo_versions}"
-              )
-          PY
+      - name: Check release metadata
+        run: uv run --no-sync python scripts/check_release.py
 
       - name: Lint Python
         run: uv run --no-sync ruff check .

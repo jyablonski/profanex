@@ -27,5 +27,3 @@ Current intentional exclusions include mild `damn` / `hell`, bare `kill` / `murd
 | 2026-08-12 | Removed ambiguous whole-word homographs from defaults, made packaged categories exclusive, and gave allowlist entries final precedence. |
 | 2026-08-12 | Reduced default false positives from numeric-only leet tokens and context-neutral anatomical/adult-topic terms. |
 | 2026-08-11 | Corrected upstream attribution and CC BY 4.0 licensing; removed duplicate data; audited clear sexual, slur, and excretory category tags. |
-
-For release steps see the [release checklist](../../docs/release-checklist.md).

@@ -1,4 +1,4 @@
-.PHONY: develop test rust-test rust-cov build docs docs-serve accuracy benchmark-competitors fmt lint typecheck quality clippy deadcode check
+.PHONY: develop test rust-test rust-cov build docs docs-serve accuracy benchmark-competitors fmt lint typecheck quality clippy deadcode check prerelease-check release
 
 develop:
 	uv sync --group local
@@ -68,4 +68,49 @@ quality: lint typecheck deadcode
 	cargo fmt --all -- --check
 	$(MAKE) clippy
 
-check: quality test
+check: develop quality test
+
+prerelease-check:
+	python3 scripts/check_release.py
+	$(MAKE) check
+	$(MAKE) docs
+	$(MAKE) build
+
+# just run `make release`, no need to set a version. it reads the version from pyproject.toml
+release:
+	@branch="$$(git branch --show-current)"; \
+		if [ "$$branch" != "main" ]; then \
+			echo "release must run from main (current branch: $$branch)" >&2; \
+			exit 1; \
+		fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "release requires a clean working tree" >&2; \
+		git status --short; \
+		exit 1; \
+	fi
+	@$(MAKE) prerelease-check
+	@git fetch origin --tags
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "release checks changed the working tree; review and commit those changes first" >&2; \
+		git status --short; \
+		exit 1; \
+	fi
+	@if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse origin/main)" ]; then \
+		echo "local main must exactly match origin/main before release" >&2; \
+		exit 1; \
+	fi
+	@version="$$(python3 scripts/check_release.py --print-version)"; \
+		tag="v$$version"; \
+		if git show-ref --verify --quiet "refs/tags/$$tag"; then \
+			echo "tag $$tag already exists" >&2; \
+			exit 1; \
+		fi; \
+		printf "Create and push %s from main at %s? [y/N] " "$$tag" "$$(git rev-parse --short HEAD)"; \
+		read answer; \
+		case "$$answer" in y|Y|yes|YES) ;; *) echo "release cancelled"; exit 1 ;; esac; \
+		git tag -a "$$tag" -m "Profanex $$version"; \
+		if ! git push origin "$$tag"; then \
+			echo "tag push failed; $$tag remains local" >&2; \
+			exit 1; \
+		fi; \
+		echo "pushed $$tag; monitor the CI/CD workflow for publication"

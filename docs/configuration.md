@@ -281,4 +281,3 @@ Fixture suites under [`fixtures/`](https://github.com/jyablonski/profanex/blob/m
 - [How it works](how_it_works.md)
 - [Benchmarks](benchmarks.md)
 - [Lexicon provenance](https://github.com/jyablonski/profanex/blob/main/profanex/data/PROVENANCE.md)
-- [Release checklist](release-checklist.md)

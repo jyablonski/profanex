@@ -29,7 +29,6 @@ nav:
   - Benchmarks: benchmarks.md
   - Competitive benchmarks: competitive-benchmarks.md
   - Limitations: limitations.md
-  - Release checklist: release-checklist.md
 
 markdown_extensions:
   - admonition
