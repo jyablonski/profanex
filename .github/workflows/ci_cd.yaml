@@ -113,8 +113,7 @@ jobs:
         run: |
           cargo llvm-cov --locked -p profanex-core --all-targets \
             --fail-under-lines 90 \
-            --lcov --output-path lcov.info \
-            --html --output-dir coverage/html
+            --lcov --output-path lcov.info
 
       - name: Doc tests
         run: cargo test --locked -p profanex-core --doc
@@ -203,17 +202,17 @@ jobs:
       - name: Smoke-test wheel on minimum Python
         run: |
           uv run --isolated --no-project --python 3.11 --with dist/*.whl \
-            python -c "from profanex import Filter; f = Filter(); assert f.contains('fuck'); assert f.find('you are a b1tch'); assert f.analyze('fuck') == (True, '****')"
+            python -P -c "from profanex import Filter; f = Filter(); assert f.contains('fuck'); assert f.find('you are a b1tch'); assert f.analyze('fuck') == (True, '****')"
 
       - name: Smoke-test same wheel on latest Python
         run: |
           uv run --isolated --no-project --python 3.14 --with dist/*.whl \
-            python -c "from profanex import Filter, FilterConfig; f = Filter(FilterConfig(banned=['straße'], allowlist=[])); assert f.contains('STRASSE')"
+            python -P -c "from profanex import Filter, FilterConfig; f = Filter(FilterConfig(banned=['straße'], allowlist=[])); assert f.contains('STRASSE')"
 
       - name: Smoke-test source distribution on latest Python
         run: |
           uv run --isolated --no-project --python 3.14 --with dist/*.tar.gz \
-            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+            python -P -c "from profanex import Filter; assert Filter().contains('fuck')"
 
       - name: Upload source distribution
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -298,7 +297,7 @@ jobs:
         if: matrix.smoke
         run: |
           uv run --isolated --no-project --python 3.11 --with dist/*.whl \
-            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+            python -P -c "from profanex import Filter; assert Filter().contains('fuck')"
 
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -358,7 +357,7 @@ jobs:
       - name: Smoke-test wheel
         run: |
           uv run --isolated --no-project --python 3.11 --with dist/*.whl \
-            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+            python -P -c "from profanex import Filter; assert Filter().contains('fuck')"
 
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -425,7 +424,7 @@ jobs:
         shell: pwsh
         run: |
           $wheel = (Get-ChildItem dist/*.whl).FullName
-          uv run --isolated --no-project --python "${{ matrix.smoke-python }}" --with $wheel python -c "from profanex import Filter; assert Filter().contains('fuck')"
+          uv run --isolated --no-project --python "${{ matrix.smoke-python }}" --with $wheel python -P -c "from profanex import Filter; assert Filter().contains('fuck')"
 
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -437,7 +436,7 @@ jobs:
 
   deploy:
     name: Publish release
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     needs:
       - quality
       - rust
@@ -520,14 +519,12 @@ jobs:
       - wheels-macos
       - wheels-windows
       - deploy
-    if: ${{ always() && (contains(needs.*.result, 'failure') || needs.deploy.result == 'success') }}
+    if: ${{ always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (contains(needs.*.result, 'failure') || needs.deploy.result == 'success') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Send Slack notification
-        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         uses: jyablonski/actions/deploy-notification@3ff8e3e6dcfb804cc5fc0aed41be72e3ed98a718 # v1
         with:
           slack-webhook: ${{ env.SLACK_WEBHOOK_URL }}
