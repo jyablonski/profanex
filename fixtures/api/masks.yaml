@@ -1,0 +1,44 @@
+# Built-in mask projection contracts.
+
+cases:
+  - id: stars_simple
+    text: "what the fuck"
+    expect_contains: true
+    expect_matches:
+      - { start: 9, end: 13, text: "fuck", term: "fuck", kind: exact, score: 100.0 }
+    expect_clean_stars: "what the ****"
+
+  - id: vowels_simple
+    text: "what the fuck"
+    config:
+      mask: vowels
+    expect_contains: true
+    expect_matches:
+      - { start: 9, end: 13, text: "fuck", term: "fuck", kind: exact, score: 100.0 }
+    expect_clean_vowels: "what the f*ck"
+
+  - id: stars_multi
+    text: "fuck and shit"
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 4, text: "fuck", term: "fuck", kind: exact, score: 100.0 }
+      - { start: 9, end: 13, text: "shit", term: "shit", kind: exact, score: 100.0 }
+    expect_clean_stars: "**** and ****"
+
+  - id: vowels_custom_lexicon
+    text: "alpha beta gamma"
+    config:
+      banned: ["beta"]
+      allowlist: []
+      mask: vowels
+    expect_contains: true
+    expect_matches:
+      - { start: 6, end: 10, text: "beta", term: "beta", kind: exact, score: 100.0 }
+    expect_clean_vowels: "alpha b*t* gamma"
+
+  - id: clean_unchanged_on_fp
+    text: "please pass the salt"
+    expect_contains: false
+    expect_matches: []
+    expect_clean_stars: "please pass the salt"
+    expect_clean_vowels: "please pass the salt"

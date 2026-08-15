@@ -1,67 +1,550 @@
-name: profanex CI / CD Pipeline
+name: CI/CD
 
 on:
   pull_request:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: [main]
+    tags: ["v*"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
 
 env:
-  UV_VERSION: "0.7.19"
+  UV_VERSION: "0.11.16"
+  MATURIN_VERSION: "v1.14.1"
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
 
 jobs:
-  ci_pipeline:
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: quality
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          enable-cache: true
+          prune-cache: true
+
+      - name: Install quality dependencies
+        run: uv sync --locked --only-group quality --no-install-project
+
+      - name: Check package versions agree
+        run: |
+          uv run --no-sync python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          py_version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          cargo_versions = {
+              path: tomllib.loads(Path(path).read_text())["package"]["version"]
+              for path in ("Cargo.toml", "crates/profanex-core/Cargo.toml")
+          }
+          normalized = {version.replace("-rc.", "rc") for version in cargo_versions.values()}
+          if normalized != {py_version}:
+              raise SystemExit(
+                  f"package version mismatch: pyproject.toml={py_version}, Cargo={cargo_versions}"
+              )
+          PY
+
+      - name: Lint Python
+        run: uv run --no-sync ruff check .
+
+      - name: Check Python formatting
+        run: uv run --no-sync ruff format --check .
+
+      - name: Type-check Python
+        run: uv run --no-sync ty check
+
+      - name: Deadcode Python (vulture)
+        run: |
+          uv run --no-sync vulture profanex fixtures scripts tests \
+            --exclude '*_core.pyi' \
+            --min-confidence 80
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Lint Rust
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+      # Prebuilt binary (does not need to compile against workspace MSRV 1.85).
+      - name: Install cargo-machete
+        uses: taiki-e/install-action@4c58e71d1d1ba793468ad93bf8869b07cac6f0d8
+        with:
+          tool: cargo-machete@0.8.0
+
+      - name: Deadcode Rust deps (cargo-machete)
+        run: cargo machete
+
+  rust:
+    name: Rust tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+          components: llvm-tools-preview
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: rust-coverage
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@4c58e71d1d1ba793468ad93bf8869b07cac6f0d8 # cargo-llvm-cov
+
+      - name: Unit tests and coverage
+        run: |
+          cargo llvm-cov --locked -p profanex-core --all-targets \
+            --fail-under-lines 90 \
+            --lcov --output-path lcov.info \
+            --html --output-dir coverage/html
+
+      - name: Doc tests
+        run: cargo test --locked -p profanex-core --doc
+
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: python-${{ matrix.python-version }}
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           version: ${{ env.UV_VERSION }}
-          enable-cache: true
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          prune-cache: true
+          cache-suffix: py${{ matrix.python-version }}
 
-      - name: Run tests for ${{ matrix.python-version }}
-        run: uv run pytest -vv --cov-report term --cov=profanex --color=yes
+      - name: Install test dependencies
+        run: uv sync --locked --no-install-project
 
-  cd_pipeline:
+      - name: Build extension
+        run: uv run --no-sync maturin develop --uv --locked
+
+      - name: Test
+        run: uv run --no-sync pytest
+
+  package:
+    name: Package and installation smoke tests
     runs-on: ubuntu-latest
-    needs: ci_pipeline
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    timeout-minutes: 25
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: package
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           version: ${{ env.UV_VERSION }}
+          python-version: "3.11"
           enable-cache: true
+          prune-cache: true
 
-      - name: Build Package
-        run: uv build --no-cache
+      - name: Build wheel and source distribution
+        run: uv build --clear --no-sources --out-dir dist
 
-      - name: Publish Package to PyPI
-        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
+      - name: Verify stable-ABI wheel tag
+        run: |
+          wheel="$(basename dist/*.whl)"
+          case "$wheel" in
+            *-cp311-abi3-*) ;;
+            *) echo "expected cp311-abi3 wheel, got: $wheel" >&2; exit 1 ;;
+          esac
 
-  deploy-alert:
-    needs: cd_pipeline
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
+      - name: Smoke-test wheel on minimum Python
+        run: |
+          uv run --isolated --no-project --python 3.11 --with dist/*.whl \
+            python -c "from profanex import Filter; f = Filter(); assert f.contains('fuck'); assert f.find('you are a b1tch'); assert f.analyze('fuck') == (True, '****')"
 
-      - name: Slack Deploy Notification
-        uses: jyablonski/actions/slack_alert@v1
+      - name: Smoke-test same wheel on latest Python
+        run: |
+          uv run --isolated --no-project --python 3.14 --with dist/*.whl \
+            python -c "from profanex import Filter, FilterConfig; f = Filter(FilterConfig(banned=['straße'], allowlist=[])); assert f.contains('STRASSE')"
+
+      - name: Smoke-test source distribution on latest Python
+        run: |
+          uv run --isolated --no-project --python 3.14 --with dist/*.tar.gz \
+            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+
+      - name: Upload source distribution
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          message: ${{ job.status == 'success' && 'profanex Deployed to Production' || 'profanex Failed to deploy properly' }}
-          title: ${{ job.status == 'success' && 'profanex Deploy Pipeline' || 'profanex Deploy Failure' }}
-          color: ${{ job.status == 'success' && 'good' || 'danger' }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          name: sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  wheels-linux:
+    name: Linux wheel (${{ matrix.arch }})
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: true
+          - arch: i686
+            target: i686-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: false
+          - arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: false
+          - arch: armv7l
+            target: armv7-unknown-linux-gnueabihf
+            manylinux: "2_17"
+            smoke: false
+          - arch: ppc64
+            target: powerpc64-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: false
+          - arch: ppc64le
+            target: powerpc64le-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: false
+          - arch: s390x
+            target: s390x-unknown-linux-gnu
+            manylinux: "2_17"
+            smoke: false
+          - arch: riscv64
+            target: riscv64gc-unknown-linux-gnu
+            manylinux: "2_31"
+            smoke: false
+          - arch: loongarch64
+            target: loongarch64-unknown-linux-gnu
+            manylinux: "2_36"
+            smoke: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          rust-toolchain: "1.85.0"
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --locked --out dist --compatibility pypi
+          sccache: true
+
+      - name: Install uv and Python for smoke
+        if: matrix.smoke
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.11"
+          enable-cache: true
+          prune-cache: true
+          cache-suffix: linux-smoke-${{ matrix.arch }}
+
+      - name: Smoke-test wheel
+        if: matrix.smoke
+        run: |
+          uv run --isolated --no-project --python 3.11 --with dist/*.whl \
+            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-linux-${{ matrix.arch }}
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  wheels-macos:
+    name: macOS wheel (${{ matrix.arch }})
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+          - arch: aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: macos-${{ matrix.arch }}
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.11"
+          enable-cache: true
+          prune-cache: true
+          cache-suffix: macos-${{ matrix.arch }}
+
+      - name: Install build dependencies
+        run: uv sync --locked --no-install-project
+
+      - name: Build wheel
+        run: uv run --no-sync maturin build --release --locked --out dist --compatibility pypi --target ${{ matrix.target }}
+
+      - name: Smoke-test wheel
+        run: |
+          uv run --isolated --no-project --python 3.11 --with dist/*.whl \
+            python -c "from profanex import Filter; assert Filter().contains('fuck')"
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-macos-${{ matrix.arch }}
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  wheels-windows:
+    name: Windows wheel (${{ matrix.arch }})
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            smoke-python: "3.11"
+          - arch: x86
+            os: windows-latest
+            target: i686-pc-windows-msvc
+            smoke-python: cpython-3.11-windows-x86-none
+          - arch: aarch64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            smoke-python: "3.11"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: "1.85.0"
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: ". -> target"
+          shared-key: windows-${{ matrix.arch }}
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.11"
+          enable-cache: true
+          prune-cache: true
+          cache-suffix: windows-${{ matrix.arch }}
+
+      - name: Install build dependencies
+        run: uv sync --locked --no-install-project
+
+      - name: Build wheel
+        run: uv run --no-sync maturin build --release --locked --out dist --compatibility pypi --target ${{ matrix.target }}
+
+      - name: Smoke-test wheel
+        shell: pwsh
+        run: |
+          $wheel = (Get-ChildItem dist/*.whl).FullName
+          uv run --isolated --no-project --python "${{ matrix.smoke-python }}" --with $wheel python -c "from profanex import Filter; assert Filter().contains('fuck')"
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-windows-${{ matrix.arch }}
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Publish release
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs:
+      - quality
+      - rust
+      - python
+      - package
+      - wheels-linux
+      - wheels-macos
+      - wheels-windows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/profanex/
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: false
+
+      - name: Verify tag matches package version
+        run: |
+          set -euo pipefail
+          package_version="$(uv version --short)"
+          if [[ "v${package_version}" != "${GITHUB_REF_NAME}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match pyproject.toml version ${package_version}."
+            exit 1
+          fi
+
+      - name: Download distributions
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: "*"
+          merge-multiple: true
+          path: dist
+
+      - name: List distributions
+        run: ls -la dist
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --draft --generate-notes --verify-tag
+          fi
+
+      - name: Publish distributions to PyPI
+        run: uv publish --check-url https://pypi.org/simple/profanex/ dist/*
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+          else
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease
+          fi
+
+  notify:
+    name: Notify deployment result
+    needs:
+      - quality
+      - rust
+      - python
+      - package
+      - wheels-linux
+      - wheels-macos
+      - wheels-windows
+      - deploy
+    if: ${{ always() && (contains(needs.*.result, 'failure') || needs.deploy.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Send Slack notification
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: jyablonski/actions/deploy-notification@3ff8e3e6dcfb804cc5fc0aed41be72e3ed98a718 # v1
+        with:
+          slack-webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          template: ${{ contains(needs.*.result, 'failure') && 'pipeline-failure' || 'deployment-success' }}
+          deployment-url: https://pypi.org/project/profanex/

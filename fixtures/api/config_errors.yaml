@@ -1,0 +1,70 @@
+# Config validation contracts. expect_error is matched as a substring of ConfigError.
+
+cases:
+  - id: banned_path_mutex
+    text: ""
+    config:
+      banned: ["x"]
+      banned_path: "/tmp/does-not-matter.yaml"
+    expect_error: "banned and banned_path"
+
+  - id: allowlist_path_mutex
+    text: ""
+    config:
+      allowlist: []
+      allowlist_path: "/tmp/does-not-matter.yaml"
+    expect_error: "allowlist and allowlist_path"
+
+  - id: threshold_low
+    text: ""
+    config: { threshold: -1 }
+    expect_error: "threshold"
+
+  - id: threshold_high
+    text: ""
+    config: { threshold: 101 }
+    expect_error: "threshold"
+
+  - id: min_fuzzy_len_invalid
+    text: ""
+    config: { min_fuzzy_len: 0 }
+    expect_error: "min_fuzzy_len"
+
+  - id: fuzzy_length_delta_invalid
+    text: ""
+    config: { fuzzy_length_delta: -1 }
+    expect_error: "fuzzy_length_delta"
+
+  - id: fuzzy_length_delta_too_large
+    text: ""
+    config: { fuzzy_length_delta: 65 }
+    expect_error: "fuzzy_length_delta"
+
+  - id: fuzzy_max_token_len_too_large
+    text: ""
+    config: { fuzzy_max_token_len: 257 }
+    expect_error: "fuzzy_max_token_len"
+
+  - id: fuzzy_max_lt_min
+    text: ""
+    config: { min_fuzzy_len: 8, fuzzy_max_token_len: 4 }
+    expect_error: "fuzzy_max_token_len"
+
+  - id: unknown_category
+    text: ""
+    config:
+      categories: ["nope"]
+    expect_error: "unknown categories"
+
+  - id: unsupported_mask
+    text: ""
+    config:
+      mask: "garbage"
+    expect_error: "unsupported mask"
+
+  - id: bare_string_banned
+    text: ""
+    config:
+      banned: "ab"
+      allowlist: []
+    expect_error: "bare string"

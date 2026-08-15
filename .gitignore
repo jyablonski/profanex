@@ -12,4 +12,22 @@ wheels/
 .vscode
 htmlcov/
 .coverage
+coverage.xml
+lcov.info
+coverage/
 .tox/
+
+# Local planning docs (not published with the package)
+docs/plans/
+
+# Rust / maturin
+/target/
+*.so
+*.dylib
+*.dll
+profanex/*.so
+.maturin/
+# Built artifacts
+dist/
+benchmarks/results/
+site/

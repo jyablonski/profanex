@@ -1,9 +1,9 @@
 [project]
 name = "profanex"
-version = "0.0.2"
-description = ""
+version = "1.0.0"
+description = "Fast Rust-powered profanity detection and filtering for Python with Unicode-safe spans, fuzzy matching, allowlists, and parallel batches"
 authors = [{ name = "jyablonski9", email = "jyablonski9@gmail.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 maintainers = [{ name = "jyablonski9", email = "jyablonski9@gmail.com" }]
 keywords = [
@@ -11,68 +11,154 @@ keywords = [
     "filtering",
     "text-processing",
     "normalization",
-    "fuzzy-matching",
-    "censorship",
+    "profanity-filter",
+    "profanity-detection",
+    "bad-word-filter",
+    "bad-words",
     "content-moderation",
+    "text-moderation",
+    "content-filtering",
+    "word-filter",
+    "text-censoring",
+    "fuzzy-matching",
+    "unicode",
+    "python",
+    "rust",
+    "pyo3",
 ]
-license = "MIT"
+license = "MIT AND CC-BY-4.0"
+license-files = ["LICENSE", "profanex/data/PROVENANCE.md"]
 
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Text Processing :: Filters",
+    "Typing :: Typed",
 ]
 
-dependencies = ["pyyaml>=6.0.2", "rapidfuzz>=3.13.0"]
+dependencies = ["pyyaml>=6.0.3"]
+
+[project.urls]
+Homepage = "https://github.com/jyablonski/profanex"
+Documentation = "https://jyablonski.github.io/profanex/"
+Changelog = "https://github.com/jyablonski/profanex/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/jyablonski/profanex/issues"
+Source = "https://github.com/jyablonski/profanex"
+Benchmarks = "https://jyablonski.github.io/profanex/benchmarks/"
 
 [dependency-groups]
-dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
-local = ["ipykernel>=6.29.5", "mypy>=1.16.1", "ruff>=0.12.3"]
+dev = [
+    "hypothesis>=6,<7",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "maturin>=1.8,<2.0",
+]
+quality = [
+    "hypothesis>=6,<7",
+    "pytest>=8.4.1",
+    "pyyaml>=6.0.3",
+    "ruff>=0.12.3",
+    "ty>=0.0.64",
+    "vulture>=2.14",
+]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9,<10",
+    "mkdocstrings>=1,<2",
+    "mkdocstrings-python>=2,<3",
+    "ruff>=0.12.3",
+]
+local = [
+    "ipykernel>=6.29.5",
+    "pre-commit>=4.2.0",
+    { include-group = "quality" },
+]
 
 [tool.uv]
 default-groups = ["dev"]
 
-[tool.hatch.build]
-packages = ["profanex"]
-
-[tool.hatch.build.targets.sdist]
-exclude = ["docker/", "tests/", "scripts/", "examples/"]
-
-[tool.hatch.build.targets.wheel]
-exclude = ["docker/", "tests/", "scripts/", "examples/"]
-
-
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "profanex._core"
+python-packages = ["profanex"]
+python-source = "."
+features = ["pyo3/extension-module"]
+include = [
+    { path = "profanex/data/*", format = ["sdist", "wheel"] },
+    { path = "profanex/_core.pyi", format = ["sdist", "wheel"] },
+    { path = "profanex/py.typed", format = ["sdist", "wheel"] },
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["profanex", "tests", "fixtures", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+]
+ignore = [
+    "E501",  # line length handled by formatter / pragmatic for fixtures
+    "UP038", # isinstance(X | Y) can be less readable for multi-type guards
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**" = ["T201"]
+"tests/**" = ["B011"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["profanex", "tests", "fixtures", "scripts"]
+exclude = ["benchmarks/results", "htmlcov", "dist", "target"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
-    'ignore:function ham\(\) is deprecated:DeprecationWarning',
 ]
-testpaths = ["tests"]
-addopts = "-v"
-
-# not needed
-# [tool.tox]
-# requires = ["tox>=4.27.0"]
-# legacy_tox_ini = """
-# [tox]
-# envlist = py{310,311,312,313}
-
-# [testenv]
-# deps = 
-#     pytest
-#     pytest-cov
-# commands = 
-#     pytest -vv --cov-report=term --cov=profanex --color=yes
-# """
+markers = [
+    "wip: work in progress",
+    "infrastructure: mocks for dummy data (sql db, http endpoint etc)",
+    "slow: longer-running checks (corpora / perf sanity)",
+]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=profanex",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml:coverage.xml",
+    "--cov-fail-under=90",
+    "--color=yes",
+]

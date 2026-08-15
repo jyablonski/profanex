@@ -1,0 +1,35 @@
+# Reviewed default allowlist for known false-positive magnets.
+# Applied under the same normalization and boundary rules as banned terms.
+# Provenance: curated for Profanex 1.0 exact/phrase defaults (2026-07-28).
+# These terms are NOT stopwords; they suppress substring/edge matches when
+# boundaries are disabled or when a banned stem would otherwise fire.
+
+- pass
+- password
+- passwords
+- bass
+- classic
+- classical
+- assumption
+- assume
+- assumes
+- assumed
+- assuming
+- button
+- buttons
+- compass
+- passionate
+- passenger
+- passport
+- bypass
+- carcass
+- chassis
+- assassin
+- assassinate
+- assassination
+- bacon
+- cassette
+- accumulate
+- document
+- documents
+- scunthorpe

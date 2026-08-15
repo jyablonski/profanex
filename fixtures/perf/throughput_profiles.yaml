@@ -1,0 +1,56 @@
+# Deterministic batch corpus profiles for throughput / crossover benches.
+# Each template's `text` may use `{i}` for the row index.
+# `weight` controls relative frequency inside the round-robin bag.
+
+profiles:
+  default_mix:
+    description: "25% dense hits, 25% clean, 25% FP magnets, 25% fuzzy typos"
+    templates:
+      - id: dense_hits
+        weight: 1
+        text: "line {i} contains fuck and shit for density"
+      - id: clean
+        weight: 1
+        text: "perfectly clean text number {i} with no hits"
+      - id: fp_magnets
+        weight: 1
+        text: "borderline classic pass assumption {i}"
+      - id: fuzzy_typos
+        weight: 1
+        text: "typo dense fukc row {i}"
+
+  clean_heavy:
+    description: "Mostly clean traffic with sparse exact hits"
+    templates:
+      - id: clean
+        weight: 9
+        text: "clean prose row {i} about classic music and passenger lists"
+      - id: hit
+        weight: 1
+        text: "occasional fuck at row {i}"
+
+  hit_heavy:
+    description: "High match density for find/clean stress"
+    templates:
+      - id: multi
+        weight: 3
+        text: "fuck shit fuck row {i}"
+      - id: phrase
+        weight: 1
+        text: "a blow job mention {i}"
+      - id: clean
+        weight: 1
+        text: "rare clean row {i}"
+
+  crossover:
+    description: "Mix used for serial vs parallel crossover notes"
+    templates:
+      - id: dense
+        weight: 1
+        text: "line {i} contains fuck and shit for density"
+      - id: clean
+        weight: 1
+        text: "perfectly clean text number {i} with no hits"
+      - id: fp
+        weight: 1
+        text: "borderline classic pass assumption {i}"

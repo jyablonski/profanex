@@ -1,0 +1,110 @@
+# Behavioral contract fixtures for Profanex 1.0 (exact/phrase vertical slice).
+# Spans are half-open Python string indices: match.text == text[start:end].
+# Defaults: all categories on, word_boundaries=True, enable_fuzzy=False,
+# conservative normalization (NFKC + case + audited leet).
+
+cases:
+  - id: exact_simple
+    text: "what the fuck"
+    expect_contains: true
+    expect_matches:
+      - { start: 9, end: 13, text: "fuck", term: "fuck", kind: exact, score: 100.0 }
+    expect_clean_stars: "what the ****"
+
+  - id: leet_digit
+    text: "you are a b1tch"
+    expect_contains: true
+    expect_matches:
+      - { start: 10, end: 15, text: "b1tch", term: "bitch", kind: exact, score: 100.0 }
+    expect_clean_stars: "you are a *****"
+
+  - id: phrase_whitespace
+    text: "a blow job here"
+    expect_contains: true
+    expect_matches:
+      - { start: 2, end: 10, text: "blow job", term: "blow job", kind: phrase, score: 100.0 }
+
+  - id: fp_pass
+    text: "please pass the salt"
+    expect_contains: false
+    expect_matches: []
+    expect_clean_stars: "please pass the salt"
+
+  - id: fp_bass
+    text: "bass guitar solo"
+    expect_contains: false
+    expect_matches: []
+
+  - id: fp_classic
+    text: "classic literature"
+    expect_contains: false
+    expect_matches: []
+
+  - id: fp_assumption
+    text: "a bad assumption"
+    expect_contains: false
+    expect_matches: []
+
+  - id: fp_button
+    text: "press the button"
+    expect_contains: false
+    expect_matches: []
+
+  - id: clean_no_match
+    text: "hello world"
+    expect_contains: false
+    expect_matches: []
+    expect_clean_stars: "hello world"
+
+  - id: unicode_case
+    text: "WHAT THE FUCK"
+    expect_contains: true
+    expect_matches:
+      - { start: 9, end: 13, text: "FUCK", term: "fuck", kind: exact, score: 100.0 }
+
+  - id: overlap_prefer_longer
+    text: "asshole"
+    config:
+      banned: ["ass", "asshole"]
+      allowlist: []
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 7, text: "asshole", term: "asshole", kind: exact, score: 100.0 }
+
+  - id: allowlist_suppresses
+    text: "projectcodename is fine"
+    config:
+      banned: ["projectcodename"]
+      extra_allowlist: ["projectcodename"]
+    expect_contains: false
+    expect_matches: []
+    expect_clean_stars: "projectcodename is fine"
+
+  - id: custom_banned_only
+    text: "alpha beta gamma"
+    config:
+      banned: ["beta"]
+      allowlist: []
+    expect_contains: true
+    expect_matches:
+      - { start: 6, end: 10, text: "beta", term: "beta", kind: exact, score: 100.0 }
+    expect_clean_stars: "alpha **** gamma"
+
+  - id: midword_no_boundary
+    text: "classic"
+    config:
+      banned: ["ass"]
+      allowlist: []
+      word_boundaries: true
+    expect_contains: false
+    expect_matches: []
+
+  - id: substring_loose
+    text: "classic"
+    config:
+      banned: ["ass"]
+      allowlist: []
+      word_boundaries: false
+    expect_contains: true
+    expect_matches:
+      - { start: 2, end: 5, text: "ass", term: "ass", kind: exact, score: 100.0 }
