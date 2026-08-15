@@ -1,11 +1,13 @@
-### Description
-Description for the PR
+## Summary
 
-## Added
-- None
+<!-- What changed, and why? -->
 
-## Updated
-- None
+## Validation
 
-## Deleted
-- None
+<!-- List the tests or checks you ran. -->
+
+## Checklist
+
+- [ ] Public behavior is covered by tests or fixtures.
+- [ ] User-facing changes are documented.
+- [ ] No secrets, generated artifacts, or benchmark result files are included.

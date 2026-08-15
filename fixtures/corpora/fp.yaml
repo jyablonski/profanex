@@ -1,0 +1,89 @@
+# Curated false-positive corpus under default policy (boundaries on, fuzzy off).
+
+cases:
+  - id: fp_pass
+    text: "please pass the salt"
+  - id: fp_bass
+    text: "bass guitar solo"
+  - id: fp_classic
+    text: "classic literature"
+  - id: fp_classical
+    text: "classical music"
+  - id: fp_assumption
+    text: "a bad assumption"
+  - id: fp_assume
+    text: "I assume nothing"
+  - id: fp_button
+    text: "press the button"
+  - id: fp_compass
+    text: "magnetic compass"
+  - id: fp_passionate
+    text: "a passionate speech"
+  - id: fp_passenger
+    text: "airline passenger"
+  - id: fp_passport
+    text: "check your passport"
+  - id: fp_password
+    text: "reset your password"
+  - id: fp_passwords
+    text: "shared passwords expire"
+  - id: fp_names_prose
+    text: "The classic assumption about bass guitar pass rates is wrong."
+  - id: fp_scunthorpe
+    text: "visiting scunthorpe today"
+  - id: fp_accumulate
+    text: "accumulate points"
+  - id: fp_document
+    text: "read the document"
+  - id: fp_empty
+    text: ""
+  - id: fp_clean_emoji
+    text: "hello 👋 world 🎵"
+  - id: fp_assistant
+    text: "ask the assistant"
+  - id: fp_cocktail
+    text: "order a cocktail"
+  - id: fp_title_case_pass
+    text: "Please Pass The Salt"
+  - id: fp_multiline
+    text: "classic\nassumption\npass"
+  - id: fp_numeric_leet_455
+    text: "Order 455 shipped"
+  - id: fp_numeric_leet_80085
+    text: "product code 80085"
+  - id: fp_clinical_anatomy
+    text: "The anatomy lesson covered the penis, vagina, and breasts."
+  - id: fp_clinical_anal
+    text: "The patient has an anal fissure."
+  - id: fp_escort
+    text: "The police escort arrived."
+  - id: fp_eunuch
+    text: "The eunuch served in the royal court."
+  - id: fp_erotic_art
+    text: "The museum catalog discusses erotic art."
+  - id: fp_domination
+    text: "The team's domination of the league continued."
+  - id: fp_numeric_leet_455_cjk_suffix
+    text: "455中"
+  - id: fp_numeric_leet_80085_thai_prefix
+    text: "ก80085"
+  - id: fp_big_black_dog
+    text: "The big black dog ran home."
+  - id: fp_cum_laude
+    text: "She graduated cum laude."
+  - id: fp_person_name_dick_van_dyke
+    text: "Dick Van Dyke starred in it."
+  - id: fp_horse_bareback
+    text: "The horse was ridden bareback."
+  - id: fp_earthen_dike
+    text: "Repair the earthen dike."
+  - id: fp_butt_joint
+    text: "Use a butt joint here."
+  - id: fp_boner_mistake
+    text: "He made a boner in the report."
+  - id: fp_detective_dogging
+    text: "The detective was dogging the suspect."
+  - id: fp_exercise_balls
+    text: "The exercise balls are blue."
+  - id: fp_pack_animals_asses
+    text: "Two asses carried the load."

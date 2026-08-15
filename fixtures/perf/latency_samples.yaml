@@ -1,0 +1,59 @@
+# Named samples for single-item latency benches.
+# tags: clean | exact_hit | phrase_hit | leet_hit | fuzzy_typo | unicode | long_clean | long_dense
+
+cases:
+  - id: clean_prose
+    text: "The classic assumption about bass guitar pass rates is wrong."
+    tags: [clean]
+    expect_contains: false
+
+  - id: exact_fuck
+    text: "what the fuck is going on here"
+    tags: [exact_hit]
+    expect_contains: true
+
+  - id: phrase_blow_job
+    text: "a blow job here in the sentence"
+    tags: [phrase_hit]
+    expect_contains: true
+
+  - id: leet_bitch
+    text: "you are a b1tch today"
+    tags: [leet_hit, exact_hit]
+    expect_contains: true
+
+  - id: fuzzy_typo
+    text: "what the fukc is going on here"
+    tags: [fuzzy_typo]
+    expect_contains: false  # under default (fuzzy off); true when fuzzy on
+
+  - id: unicode_emoji
+    text: "🔥fuck🔥 and more text"
+    tags: [unicode, exact_hit]
+    expect_contains: true
+
+  - id: fp_pass
+    text: "please pass the salt"
+    tags: [clean]
+    expect_contains: false
+
+  - id: long_clean
+    text: >-
+      In a quiet library the classic assumption about bass guitar pass rates
+      remains an academic curiosity rather than a moderation event. Scholars
+      debate button mechanics, compass readings, and passenger manifests without
+      ever intending anything crude.
+    tags: [clean, long_clean]
+    expect_contains: false
+
+  - id: long_dense
+    text: >-
+      Line noise includes fuck and shit repeatedly so the scanner has work to do:
+      fuck shit fuck shit fuck shit across a longer paragraph for find/clean cost.
+    tags: [exact_hit, long_dense]
+    expect_contains: true
+
+  - id: empty
+    text: ""
+    tags: [clean]
+    expect_contains: false

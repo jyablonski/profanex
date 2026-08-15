@@ -1,0 +1,62 @@
+# Fuzzy matching corpus (opt-in config per case).
+
+cases:
+  - id: fuzzy_typo_fukc
+    text: "what the fukc"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      enable_fuzzy: true
+      threshold: 75
+      min_fuzzy_len: 4
+    expect:
+      - { start: 9, end: 13, text: "fukc", term: "fuck", kind: fuzzy }
+
+  - id: fuzzy_off_misses_typo
+    text: "what the fukc"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      enable_fuzzy: false
+    expect: []
+
+  - id: fuzzy_short_stem_excluded
+    text: "asx"
+    config:
+      banned: ["ass"]
+      allowlist: []
+      enable_fuzzy: true
+      threshold: 50
+      min_fuzzy_len: 4
+    expect: []
+
+  - id: fuzzy_threshold_edge_fail
+    text: "xxxx"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      enable_fuzzy: true
+      threshold: 95
+      min_fuzzy_len: 4
+    expect: []
+
+  - id: fuzzy_does_not_override_exact
+    text: "fuck"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      enable_fuzzy: true
+      threshold: 50
+      min_fuzzy_len: 4
+    expect:
+      - { start: 0, end: 4, text: "fuck", term: "fuck", kind: exact }
+
+  - id: fuzzy_allowlist_suppresses_token
+    text: "fukc"
+    config:
+      banned: ["fuck"]
+      allowlist: ["fukc"]
+      enable_fuzzy: true
+      threshold: 50
+      min_fuzzy_len: 4
+    expect: []

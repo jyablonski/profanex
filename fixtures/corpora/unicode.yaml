@@ -1,0 +1,77 @@
+# Unicode / normalization span contracts (default policy unless config set).
+
+cases:
+  - id: unicode_uppercase
+    text: "what the FUCK"
+    expect:
+      - { start: 9, end: 13, text: "FUCK", term: "fuck", kind: exact }
+
+  - id: unicode_canonical_equivalence
+    text: "é"
+    config:
+      banned: ["é"]
+      allowlist: []
+    expect:
+      - { start: 0, end: 2, text: "é", term: "é", kind: exact }
+
+  - id: unicode_full_casefold_sharp_s
+    text: "STRASSE"
+    config:
+      banned: ["straße"]
+      allowlist: []
+    expect:
+      - { start: 0, end: 7, text: "STRASSE", term: "straße", kind: exact }
+
+  - id: unicode_full_casefold_sigma
+    text: "ος"
+    config:
+      banned: ["οσ"]
+      allowlist: []
+    expect:
+      - { start: 0, end: 2, text: "ος", term: "οσ", kind: exact }
+
+  - id: unicode_emoji_adjacent
+    text: "🔥fuck🔥"
+    expect:
+      - { start: 1, end: 5, text: "fuck", term: "fuck", kind: exact }
+
+  - id: unicode_non_latin_clean
+    text: "これはテストです"
+    expect: []
+
+  - id: nfkc_compatibility
+    # ﬁ (U+FB01) NFKC → fi; ensure no panic and clean prose stays clean
+    text: "ﬁne classic"
+    expect: []
+
+  - id: repeated_optional
+    text: "fuuuck"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      normalize_repeated_chars: true
+    expect:
+      - { start: 0, end: 6, text: "fuuuck", term: "fuck", kind: exact }
+
+  - id: separated_optional
+    text: "f.u.c.k"
+    config:
+      banned: ["fuck"]
+      allowlist: []
+      normalize_separated_runs: true
+    expect:
+      - { start: 0, end: 7, text: "f.u.c.k", term: "fuck", kind: exact }
+
+  - id: unicode_zwj_clean
+    text: "family 👨‍👩‍👧‍👦 picnic"
+    expect: []
+
+  - id: unicode_fullwidth_digits_leet
+    # fullwidth １ → '1' via NFKC then leet → i inside bitch
+    text: "b１tch"
+    expect:
+      - { start: 0, end: 5, text: "b１tch", term: "bitch", kind: exact }
+
+  - id: mixed_script_clean
+    text: "Москва classic café"
+    expect: []

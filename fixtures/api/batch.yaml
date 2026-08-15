@@ -1,0 +1,48 @@
+# Batch API order / projection contracts.
+# `texts` is a list; expectations are parallel arrays unless noted.
+
+cases:
+  - id: contains_many_order
+    config:
+      banned: ["fuck", "shit"]
+      allowlist: []
+    texts: ["clean", "fuck", "please pass", "shit"]
+    expect_contains_many: [false, true, false, true]
+
+  - id: find_many_order
+    config:
+      banned: ["fuck", "shit"]
+      allowlist: []
+    texts: ["fuck", "clean", "shit"]
+    expect_find_many:
+      - [{ start: 0, end: 4, text: "fuck", term: "fuck", kind: exact, score: 100.0 }]
+      - []
+      - [{ start: 0, end: 4, text: "shit", term: "shit", kind: exact, score: 100.0 }]
+
+  - id: clean_many_stars
+    config:
+      banned: ["fuck", "shit"]
+      allowlist: []
+    texts: ["fuck", "clean", "a shit day"]
+    expect_clean_many: ["****", "clean", "a **** day"]
+
+  - id: empty_batch
+    config:
+      banned: ["fuck"]
+      allowlist: []
+    texts: []
+    expect_contains_many: []
+    expect_find_many: []
+    expect_clean_many: []
+
+  - id: parallel_equals_serial
+    config:
+      banned: ["fuck", "shit"]
+      allowlist: []
+    texts:
+      - "row 0 fuck"
+      - "clean 1"
+      - "shit #2"
+      - "classic pass"
+      - "what the fuck"
+    expect_parallel_equals_serial: true

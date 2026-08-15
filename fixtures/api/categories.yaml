@@ -1,0 +1,79 @@
+# Category include/exclude contracts.
+
+cases:
+  - id: slur_on_by_default
+    text: "slur nigger here"
+    expect_contains: true
+    expect_matches:
+      - { start: 5, end: 11, text: "nigger", term: "nigger", kind: exact, categories: ["slurs"] }
+
+  - id: slur_off
+    text: "slur nigger here"
+    config:
+      categories: ["general", "sexual", "excretory", "violence"]
+    expect_contains: false
+    expect_matches: []
+
+  - id: slur_taxonomy
+    text: "chinc darkie"
+    config:
+      categories: ["slurs"]
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 5, text: "chinc", term: "chinc", kind: exact, categories: ["slurs"] }
+      - { start: 6, end: 12, text: "darkie", term: "darkie", kind: exact, categories: ["slurs"] }
+
+  - id: excretory_taxonomy
+    text: "coprophilia dookie"
+    config:
+      categories: ["excretory"]
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 11, text: "coprophilia", term: "coprophilia", kind: exact, categories: ["excretory"] }
+      - { start: 12, end: 18, text: "dookie", term: "dookie", kind: exact, categories: ["excretory"] }
+
+  - id: sexual_only_includes_sexual_terms
+    text: "anilingus and camgirl"
+    config:
+      categories: ["sexual"]
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 9, text: "anilingus", term: "anilingus", kind: exact, categories: ["sexual"] }
+      - { start: 14, end: 21, text: "camgirl", term: "camgirl", kind: exact, categories: ["sexual"] }
+
+  - id: general_only_keeps_fuck
+    text: "what the fuck"
+    config:
+      categories: ["general"]
+    expect_contains: true
+    expect_matches:
+      - { start: 9, end: 13, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }
+
+  - id: sexual_ass_default
+    text: "ass"
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 3, text: "ass", term: "ass", kind: exact, categories: ["sexual"] }
+
+  - id: sexual_ass_sexual_only
+    text: "ass"
+    config:
+      categories: ["sexual"]
+    expect_contains: true
+    expect_matches:
+      - { start: 0, end: 3, text: "ass", term: "ass", kind: exact, categories: ["sexual"] }
+
+  - id: sexual_ass_violence_only
+    text: "ass"
+    config:
+      categories: ["violence"]
+    expect_contains: false
+    expect_matches: []
+
+  - id: general_excludes_specific_categories
+    text: "ass blow job crap nigger rape fuck"
+    config:
+      categories: ["general"]
+    expect_contains: true
+    expect_matches:
+      - { start: 30, end: 34, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }

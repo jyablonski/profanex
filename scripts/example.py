@@ -1,30 +1,24 @@
-import logging
+#!/usr/bin/env python3
+"""Minimal demo of the 1.0 Filter API (not a packaging smoke test)."""
 
-from profanex import ProfanityFilter
+from __future__ import annotations
+
+from profanex import Filter
 
 
-def main():
-    # Instantiate the filter (loads banned words from YAML by default)
-    pf = ProfanityFilter(debug_mode=True)
-
-    test_texts = [
+def main() -> None:
+    f = Filter()
+    samples = [
         "This is a clean sentence.",
         "You are a b1tch!",
         "What the fuck is going on?",
-        "No bad words here.",
-        "Some people say shit sometimes.",
-        "This sentence has multiple bad words: ass, dick, and crap.",
-        "eat my ass cupcake girl!!b0oooo0b!ies",
+        "please pass the salt",
     ]
-
-    for text in test_texts:
-        logging.info(f"Does {text} have profanity: {pf.has_profanity(text)}")
-
-    for text in test_texts:
-        cleaned = pf.clean(text)
-        logging.info(f"Original: {text}")
-        logging.info(f"Cleaned: {cleaned}")
-        logging.info("-" * 40)
+    for text in samples:
+        print(f"text={text!r}")
+        print(f"  contains={f.contains(text)}")
+        print(f"  find={f.find(text)}")
+        print(f"  clean={f.clean(text)!r}")
 
 
 if __name__ == "__main__":

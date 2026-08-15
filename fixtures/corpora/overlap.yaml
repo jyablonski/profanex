@@ -1,0 +1,35 @@
+# Overlap resolution contracts.
+
+cases:
+  - id: longer_wins
+    text: "asshole"
+    config:
+      banned: ["ass", "asshole"]
+      allowlist: []
+    expect:
+      - { start: 0, end: 7, text: "asshole", term: "asshole", kind: exact }
+
+  - id: exact_beats_fuzzy
+    text: "fuck"
+    config:
+      banned: ["fuck", "fucx"]
+      allowlist: []
+      enable_fuzzy: true
+      threshold: 50
+      min_fuzzy_len: 4
+    expect:
+      - { start: 0, end: 4, text: "fuck", term: "fuck", kind: exact }
+
+  - id: adjacent_nonoverlap
+    text: "fuck shit"
+    config:
+      banned: ["fuck", "shit"]
+      allowlist: []
+    expect:
+      - { start: 0, end: 4, text: "fuck", term: "fuck", kind: exact }
+      - { start: 5, end: 9, text: "shit", term: "shit", kind: exact }
+
+  - id: sexual_ass
+    text: "ass"
+    expect:
+      - { start: 0, end: 3, text: "ass", term: "ass", kind: exact, categories: ["sexual"] }

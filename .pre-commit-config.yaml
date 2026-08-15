@@ -3,11 +3,50 @@ repos:
     rev: v0.12.3
     hooks:
       - id: ruff-check
+        args: [--fix]
       - id: ruff-format
+
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.64
+    hooks:
+      - id: ty
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      # MkDocs validates its config during the strict build; PyYAML's safe loader rejects the callable tag required by Mermaid fences.
       - id: check-yaml
+        exclude: ^mkdocs\.yml$
       - id: debug-statements
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+
+  # Rust equivalents of ruff format / ruff lint (+ clippy as the deep static analyzer).
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --all -- --check
+        language: system
+        pass_filenames: false
+        types: [rust]
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --locked --workspace --all-targets -- -D warnings
+        language: system
+        pass_filenames: false
+        types: [rust]
+      - id: cargo-machete
+        name: cargo machete
+        entry: cargo machete
+        language: system
+        pass_filenames: false
+        types: [rust]
+      - id: vulture
+        name: vulture
+        entry: uv run vulture profanex fixtures scripts tests --exclude *_core.pyi --min-confidence 80
+        language: system
+        pass_filenames: false
+        types: [python]

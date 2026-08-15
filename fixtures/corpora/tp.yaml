@@ -1,0 +1,67 @@
+# Curated true-positive corpus (exact/phrase defaults unless noted).
+# Spans are half-open Python indices. Categories are expected enabled sets.
+
+cases:
+  - id: tp_fuck_plain
+    text: "what the fuck"
+    expect:
+      - { start: 9, end: 13, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }
+
+  - id: tp_bitch_leet
+    text: "you are a b1tch"
+    expect:
+      - { start: 10, end: 15, text: "b1tch", term: "bitch", kind: exact, categories: ["general"] }
+
+  - id: tp_phrase_blow_job
+    text: "a blow job here"
+    expect:
+      - { start: 2, end: 10, text: "blow job", term: "blow job", kind: phrase, categories: ["sexual"] }
+
+  - id: tp_shit
+    text: "oh shit"
+    expect:
+      - { start: 3, end: 7, text: "shit", term: "shit", kind: exact, categories: ["general"] }
+
+  - id: tp_multi_nonoverlap
+    text: "fuck and shit"
+    expect:
+      - { start: 0, end: 4, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }
+      - { start: 9, end: 13, text: "shit", term: "shit", kind: exact, categories: ["general"] }
+
+  - id: tp_uppercase
+    text: "WHAT THE FUCK"
+    expect:
+      - { start: 9, end: 13, text: "FUCK", term: "fuck", kind: exact, categories: ["general"] }
+
+  - id: tp_slur_category
+    text: "slur nigger here"
+    expect:
+      - { start: 5, end: 11, text: "nigger", term: "nigger", kind: exact, categories: ["slurs"] }
+
+  - id: tp_punctuation_adjacent
+    text: "say fuck!"
+    expect:
+      - { start: 4, end: 8, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }
+
+  - id: tp_quotes
+    text: '"fuck" he said'
+    expect:
+      - { start: 1, end: 5, text: "fuck", term: "fuck", kind: exact, categories: ["general"] }
+
+  - id: tp_leet_1
+    text: "oh sh1t"
+    expect:
+      - { start: 3, end: 7, text: "sh1t", term: "shit", kind: exact, categories: ["general"] }
+
+  - id: tp_custom_banned
+    text: "alpha beta gamma"
+    config:
+      banned: ["beta"]
+      allowlist: []
+    expect:
+      - { start: 6, end: 10, text: "beta", term: "beta", kind: exact, categories: ["general"] }
+
+  - id: tp_phrase_hyphen_collapse
+    text: "a blow-job here"
+    expect:
+      - { start: 2, end: 10, text: "blow-job", term: "blow job", kind: phrase, categories: ["sexual"] }

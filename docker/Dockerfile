@@ -4,41 +4,46 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PATH="/.venv/bin:/root/.cargo/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=3.13
+    UV_PYTHON=3.13 \
+    CARGO_HOME=/root/.cargo \
+    RUSTUP_HOME=/root/.rustup
 
-# install OS-level deps once in base (so we don't repeat in each stage)
+# Pin matches rust-toolchain.toml / CI (1.85.0).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends ca-certificates curl build-essential pkg-config && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.0 && \
+    rustup component add rustfmt clippy && \
     rm -rf /var/lib/apt/lists/*
 
-# -------------------------------
-# Stage: Install Python deps
-# -------------------------------
 FROM base AS python-deps
 
 ARG INSTALL_DEV_DEPENDENCIES=true
 
-COPY pyproject.toml uv.lock ./ README.md ./
+WORKDIR /src
+COPY pyproject.toml uv.lock README.md Cargo.toml Cargo.lock rust-toolchain.toml ./
+COPY src ./src
+COPY crates ./crates
+COPY profanex ./profanex
+COPY fixtures ./fixtures
+COPY tests ./tests
 
-RUN pip install uv==0.7.19 && \
+# Pin matches CI UV_VERSION in .github/workflows/ci_cd.yaml.
+RUN pip install uv==0.11.16 && \
     if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
-    uv sync --frozen; \
+      uv sync --frozen; \
     else \
-    uv sync --frozen --no-dev; \
-    fi
+      uv sync --frozen --no-dev; \
+    fi && \
+    uv run maturin develop --release --locked
 
-# -------------------------------
-# Stage: Runtime
-# -------------------------------
 FROM base AS runtime
 
-COPY --from=python-deps ./.venv ./.venv
+COPY --from=python-deps /.venv /.venv
+COPY --from=python-deps /src /src
 ENV PATH="/.venv/bin:$PATH"
 
 RUN useradd --create-home appuser
 WORKDIR /home/appuser
 USER appuser
 
-COPY profanex/ ./profanex
-COPY tests/ ./tests
-COPY pyproject.toml ./
+WORKDIR /src

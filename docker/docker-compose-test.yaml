@@ -12,8 +12,15 @@ services:
     environment:
       - ENV_TYPE=docker_dev
     volumes:
-      - ${PWD}/pyproject.toml/:/home/appuser/pyproject.toml
-      - ${PWD}/profanex/:/home/appuser/profanex
-      - ${PWD}/tests/:/home/appuser/tests
-    command: python3 -m pytest -vv --cov-report term --cov=profanex --color=yes
-
+      - ${PWD}/pyproject.toml:/src/pyproject.toml
+      - ${PWD}/uv.lock:/src/uv.lock
+      - ${PWD}/profanex/:/src/profanex
+      - ${PWD}/fixtures/:/src/fixtures
+      - ${PWD}/tests/:/src/tests
+      - ${PWD}/src/:/src/src
+      - ${PWD}/crates/:/src/crates
+      - ${PWD}/Cargo.toml:/src/Cargo.toml
+      - ${PWD}/Cargo.lock:/src/Cargo.lock
+      - ${PWD}/rust-toolchain.toml:/src/rust-toolchain.toml
+    working_dir: /src
+    command: uv run pytest

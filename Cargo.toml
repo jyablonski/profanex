@@ -1,0 +1,48 @@
+[workspace]
+members = [".", "crates/profanex-core"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+homepage = "https://github.com/jyablonski/profanex"
+repository = "https://github.com/jyablonski/profanex"
+
+[workspace.dependencies]
+profanex-core = { path = "crates/profanex-core" }
+aho-corasick = "1.1"
+unicode-normalization = "0.1"
+unicode-casefold = "0.2"
+unicode-segmentation = "1.12"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+rayon = "1.10"
+
+[package]
+name = "profanex"
+version = "1.0.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Python bindings for the Profanex matching engine"
+publish = false
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+profanex-core = { workspace = true }
+pyo3 = { version = "0.25", features = [
+    "abi3-py311",
+    "extension-module",
+    "generate-import-lib",
+] }
+
+[profile.release]
+lto = true
+codegen-units = 1

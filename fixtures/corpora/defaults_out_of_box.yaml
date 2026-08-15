@@ -1,0 +1,639 @@
+# Out-of-the-box recall / gap inventory against Filter() defaults.
+#
+# Default policy (no config): all categories, word_boundaries=True, enable_fuzzy=False,
+# normalize_leet=True, normalize_repeated_chars=False, normalize_separated_runs=False.
+#
+# Fields:
+#   expect_contains  — required CI behavior under the case config (defaults when omitted)
+#   expect_terms     — optional; matched term strings that must appear (span-free)
+#   desired_contains — optional aspirational OOB behavior for gap reports
+#   gap              — optional machine-readable gap class when desired != current
+#   notes            — human context
+#   group            — suite section for reporting
+#
+# Gap classes:
+#   lexicon          — term missing from banned_words.yaml
+#   word_boundary    — stem present but blocked mid-token (e.g. fucking)
+#   needs_repeated   — needs normalize_repeated_chars=True
+#   needs_separated  — needs normalize_separated_runs=True
+#   needs_fuzzy      — needs enable_fuzzy=True
+#   needs_leet_ext   — common mask chars not in default leet map (*, etc.)
+#   policy           — intentional allowlist / mild-language exclusion
+
+cases:
+  # --- Plain singles (must hit) ---
+  - id: oob_fuck
+    group: plain
+    text: "what the fuck"
+    expect_contains: true
+    expect_terms: [fuck]
+
+  - id: oob_shit
+    group: plain
+    text: "oh shit"
+    expect_contains: true
+    expect_terms: [shit]
+
+  - id: oob_bitch
+    group: plain
+    text: "you bitch"
+    expect_contains: true
+    expect_terms: [bitch]
+
+  - id: oob_asshole
+    group: plain
+    text: "what an asshole"
+    expect_contains: true
+    expect_terms: [asshole]
+
+  - id: oob_cunt
+    group: plain
+    text: "the cunt"
+    expect_contains: true
+    expect_terms: [cunt]
+
+  - id: oob_ass
+    group: plain
+    text: "kiss my ass"
+    expect_contains: true
+    expect_terms: [ass]
+
+  - id: oob_arse
+    group: plain
+    text: "move your arse"
+    expect_contains: true
+    expect_terms: [arse]
+
+  - id: oob_crap
+    group: plain
+    text: "that's crap"
+    expect_contains: true
+    expect_terms: [crap]
+
+  - id: oob_cock
+    group: plain
+    text: "his cock"
+    expect_contains: true
+    expect_terms: [cock]
+
+  - id: oob_bollocks
+    group: plain
+    text: "absolute bollocks"
+    expect_contains: true
+    expect_terms: [bollocks]
+
+  - id: oob_rape
+    group: plain
+    text: "rape culture"
+    expect_contains: true
+    expect_terms: [rape]
+
+  # --- Case / punctuation ---
+  - id: oob_uppercase
+    group: surface
+    text: "WHAT THE FUCK"
+    expect_contains: true
+    expect_terms: [fuck]
+
+  - id: oob_exclaim
+    group: surface
+    text: "Fuck!"
+    expect_contains: true
+    expect_terms: [fuck]
+
+  - id: oob_parens
+    group: surface
+    text: "(shit)"
+    expect_contains: true
+    expect_terms: [shit]
+
+  - id: oob_quotes
+    group: surface
+    text: '"bitch"'
+    expect_contains: true
+    expect_terms: [bitch]
+
+  - id: oob_hyphen_collapses_to_phrase_sep
+    group: surface
+    text: "oh-shit"
+    expect_contains: true
+    expect_terms: [shit]
+    notes: "Hyphen normalizes to space, so shit is a word token"
+
+  - id: oob_fullwidth_fuck
+    group: surface
+    text: "ｆｕｃｋ"
+    expect_contains: true
+    expect_terms: [fuck]
+    notes: "NFKC folds fullwidth Latin to ASCII"
+
+  # --- Default leet (must hit) ---
+  - id: oob_leet_b1tch
+    group: leet
+    text: "you b1tch"
+    expect_contains: true
+    expect_terms: [bitch]
+
+  - id: oob_leet_sh1t
+    group: leet
+    text: "oh sh1t"
+    expect_contains: true
+    expect_terms: [shit]
+
+  - id: oob_leet_a55
+    group: leet
+    text: "a55"
+    expect_contains: true
+    expect_terms: [ass]
+
+  - id: oob_leet_ar5e
+    group: leet
+    text: "ar5e"
+    expect_contains: true
+    expect_terms: [arse]
+
+  - id: oob_leet_c0ck
+    group: leet
+    text: "c0ck"
+    expect_contains: true
+    expect_terms: [cock]
+
+  - id: oob_leet_n1gger
+    group: leet
+    text: "n1gger"
+    expect_contains: true
+    expect_terms: [nigger]
+
+  - id: oob_leet_at_ss
+    group: leet
+    text: "@ss"
+    expect_contains: true
+    expect_terms: [ass]
+
+  - id: oob_leet_a_dollar
+    group: leet
+    text: "a$$"
+    expect_contains: true
+    expect_terms: [ass]
+
+  - id: oob_lexicon_b_bang_tch
+    group: leet
+    text: "b!tch"
+    expect_contains: true
+    expect_terms: [bitch]
+    notes: "bang folds to i via leet; reports canonical bitch"
+
+  - id: oob_leet_sh_bang_t
+    group: leet
+    text: "sh!t"
+    expect_contains: true
+    expect_terms: [shit]
+
+  - id: oob_mask_f_star_ck
+    group: leet
+    text: "f*ck"
+    expect_contains: true
+    expect_terms: ["f*ck"]
+
+  - id: oob_mask_f_star_star_k
+    group: leet
+    text: "f**k"
+    expect_contains: true
+    expect_terms: ["f**k"]
+
+  - id: oob_mask_sh_star_t
+    group: leet
+    text: "sh*t"
+    expect_contains: true
+    expect_terms: ["sh*t"]
+
+  - id: oob_mask_b_star_tch
+    group: leet
+    text: "b*tch"
+    expect_contains: true
+    expect_terms: ["b*tch"]
+
+  - id: oob_lexicon_a_s_s
+    group: leet
+    text: "a_s_s"
+    expect_contains: true
+    expect_terms: ["a_s_s"]
+
+  # --- Phrases / sayings in lexicon ---
+  - id: oob_phrase_blow_job
+    group: phrase
+    text: "a blow job"
+    expect_contains: true
+    expect_terms: ["blow job"]
+
+  - id: oob_phrase_blow_job_hyphen
+    group: phrase
+    text: "a blow-job"
+    expect_contains: true
+    expect_terms: ["blow job"]
+
+  - id: oob_phrase_blow_job_spaces
+    group: phrase
+    text: "a   blow   job"
+    expect_contains: true
+    expect_terms: ["blow job"]
+
+  - id: oob_phrase_blowjob_compound
+    group: phrase
+    text: "blowjob"
+    expect_contains: true
+    expect_terms: [blowjob]
+
+  - id: oob_phrase_eat_my_ass
+    group: phrase
+    text: "eat my ass"
+    expect_contains: true
+    expect_terms: ["eat my ass"]
+
+  - id: oob_phrase_doggy_style
+    group: phrase
+    text: "doggy style"
+    expect_contains: true
+    expect_terms: ["doggy style"]
+
+  - id: oob_phrase_doggie_style
+    group: phrase
+    text: "doggie style"
+    expect_contains: true
+    expect_terms: ["doggie style"]
+
+  - id: oob_phrase_dog_style
+    group: phrase
+    text: "dog style"
+    expect_contains: true
+    expect_terms: ["dog style"]
+
+  - id: oob_phrase_deep_throat
+    group: phrase
+    text: "deep throat"
+    expect_contains: true
+    expect_terms: ["deep throat"]
+
+  - id: oob_phrase_ball_sack
+    group: phrase
+    text: "ball sack"
+    expect_contains: true
+    expect_terms: ["ball sack"]
+
+  - id: oob_phrase_camel_toe
+    group: phrase
+    text: "camel toe"
+    expect_contains: true
+    expect_terms: ["camel toe"]
+
+  - id: oob_phrase_date_rape
+    group: phrase
+    text: "date rape"
+    expect_contains: true
+    expect_terms: ["date rape"]
+
+  - id: oob_phrase_big_tits
+    group: phrase
+    text: "big tits"
+    expect_contains: true
+    expect_terms: ["big tits"]
+
+  - id: oob_phrase_blue_waffle
+    group: phrase
+    text: "blue waffle"
+    expect_contains: true
+    expect_terms: ["blue waffle"]
+
+  - id: oob_phrase_double_penetration
+    group: phrase
+    text: "double penetration"
+    expect_contains: true
+    expect_terms: ["double penetration"]
+
+  - id: oob_compound_dumbass
+    group: phrase
+    text: "dumbass"
+    expect_contains: true
+    expect_terms: [dumbass]
+
+  - id: oob_compound_bullshit
+    group: phrase
+    text: "bullshit"
+    expect_contains: true
+    expect_terms: [bullshit]
+
+  - id: oob_compound_clusterfuck
+    group: phrase
+    text: "clusterfuck"
+    expect_contains: true
+    expect_terms: [clusterfuck]
+
+  - id: oob_saying_son_of_a_bitch
+    group: phrase
+    text: "son of a bitch"
+    expect_contains: true
+    expect_terms: [bitch]
+    notes: "Phrase not listed; hits via bitch token"
+
+  - id: oob_saying_piece_of_shit
+    group: phrase
+    text: "piece of shit"
+    expect_contains: true
+    expect_terms: [shit]
+
+  # --- Slurs ---
+  - id: oob_slur_nigger
+    group: slur
+    text: "nigger"
+    expect_contains: true
+    expect_terms: [nigger]
+
+  - id: oob_slur_nigga
+    group: slur
+    text: "nigga"
+    expect_contains: true
+    expect_terms: [nigga]
+
+  # --- Allowlist / FP (must miss) ---
+  - id: oob_fp_pass
+    group: false_positive
+    text: "please pass"
+    expect_contains: false
+    desired_contains: false
+    gap: policy
+
+  - id: oob_fp_classic
+    group: false_positive
+    text: "classic rock"
+    expect_contains: false
+
+  - id: oob_fp_scunthorpe
+    group: false_positive
+    text: "scunthorpe"
+    expect_contains: false
+
+  - id: oob_fp_assassin
+    group: false_positive
+    text: "assassin"
+    expect_contains: false
+
+  - id: oob_fp_cocktail
+    group: false_positive
+    text: "cocktail"
+    expect_contains: false
+
+  - id: oob_fp_assessment
+    group: false_positive
+    text: "assessment"
+    expect_contains: false
+
+  - id: oob_fp_shitake
+    group: false_positive
+    text: "shitake mushrooms"
+    expect_contains: false
+    notes: "Not in lexicon; would be an FP if substring matching were used"
+
+  # --- Formerly missing lexicon terms (recall pass) ---
+  - id: oob_motherfucker
+    group: plain
+    text: "motherfucker"
+    expect_contains: true
+    expect_terms: [motherfucker]
+
+  - id: oob_fucker
+    group: plain
+    text: "fucker"
+    expect_contains: true
+    expect_terms: [fucker]
+
+  - id: oob_fucking
+    group: plain
+    text: "stop fucking around"
+    expect_contains: true
+    expect_terms: [fucking]
+
+  - id: oob_fucked
+    group: plain
+    text: "fucked"
+    expect_contains: true
+    expect_terms: [fucked]
+
+  - id: oob_pussy
+    group: plain
+    text: "pussy"
+    expect_contains: true
+    expect_terms: [pussy]
+
+  - id: oob_whore
+    group: plain
+    text: "whore"
+    expect_contains: true
+    expect_terms: [whore]
+
+  - id: oob_slut
+    group: plain
+    text: "slut"
+    expect_contains: true
+    expect_terms: [slut]
+
+  - id: oob_bastard
+    group: plain
+    text: "bastard"
+    expect_contains: true
+    expect_terms: [bastard]
+
+  - id: oob_wanker
+    group: plain
+    text: "wanker"
+    expect_contains: true
+    expect_terms: [wanker]
+
+  - id: oob_twat
+    group: plain
+    text: "twat"
+    expect_contains: true
+    expect_terms: [twat]
+
+  - id: oob_slur_faggot
+    group: slur
+    text: "faggot"
+    expect_contains: true
+    expect_terms: [faggot]
+
+  - id: oob_slur_retard
+    group: slur
+    text: "retard"
+    expect_contains: true
+    expect_terms: [retard]
+
+  - id: oob_piss
+    group: plain
+    text: "piss"
+    expect_contains: true
+    expect_terms: [piss]
+
+  - id: oob_porn
+    group: plain
+    text: "porn"
+    expect_contains: true
+    expect_terms: [porn]
+
+  - id: oob_stfu
+    group: plain
+    text: "stfu"
+    expect_contains: true
+    expect_terms: [stfu]
+
+  - id: oob_compound_motherfucker_sentence
+    group: plain
+    text: "you motherfucker"
+    expect_contains: true
+    expect_terms: [motherfucker]
+
+  # --- Mild language intentionally excluded ---
+  - id: gap_lexicon_damn
+    group: lexicon_gap
+    text: "damn"
+    expect_contains: false
+    desired_contains: false
+    gap: policy
+    notes: "Mild; often intentionally excluded"
+
+  - id: gap_lexicon_hell
+    group: lexicon_gap
+    text: "hell"
+    expect_contains: false
+    desired_contains: false
+    gap: policy
+
+  # --- Evasions needing opt-in normalize / fuzzy ---
+  - id: gap_sep_f_dot_u_dot_c_dot_k
+    group: evasion
+    text: "f.u.c.k"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_separated
+
+  - id: gap_sep_b_dot_i_dot_t_dot_c_dot_h
+    group: evasion
+    text: "b.i.t.c.h"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_separated
+
+  - id: gap_sep_s_dot_h_dot_i_dot_t
+    group: evasion
+    text: "s.h.i.t"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_separated
+
+  - id: gap_sep_spaced_fuck
+    group: evasion
+    text: "f u c k"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_separated
+    notes: "Space is a glue sep when normalize_separated_runs=True (still off by default)"
+
+  - id: oob_optin_spaced_fuck
+    group: evasion
+    text: "f u c k"
+    config:
+      normalize_separated_runs: true
+    expect_contains: true
+    expect_terms: [fuck]
+
+  - id: oob_lexicon_prick
+    group: plain
+    text: "you prick"
+    expect_contains: true
+    expect_terms: [prick]
+
+  - id: oob_lexicon_shitty
+    group: plain
+    text: "shitty day"
+    expect_contains: true
+    expect_terms: [shitty]
+
+  - id: oob_lexicon_dicks
+    group: plain
+    text: "those dicks"
+    expect_contains: true
+    expect_terms: [dicks]
+
+  - id: oob_lexicon_tits
+    group: plain
+    text: "nice tits"
+    expect_contains: true
+    expect_terms: [tits]
+
+  - id: oob_mask_s_star_star_t
+    group: plain
+    text: "oh s**t"
+    expect_contains: true
+    expect_terms: [s**t]
+
+  - id: oob_mask_d_star_ck
+    group: plain
+    text: "his d*ck"
+    expect_contains: true
+    expect_terms: [d*ck]
+
+  - id: gap_rep_fuuuck
+    group: evasion
+    text: "fuuuck"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_repeated
+
+  - id: gap_rep_biiitch
+    group: evasion
+    text: "biiitch"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_repeated
+
+  - id: gap_fuzzy_fukc
+    group: evasion
+    text: "fukc"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_fuzzy
+
+  - id: gap_fuzzy_fcuk
+    group: evasion
+    text: "fcuk"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_fuzzy
+
+  - id: gap_fuzzy_phuck
+    group: evasion
+    text: "phuck"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_fuzzy
+
+  - id: gap_abbrev_wtf
+    group: evasion
+    text: "wtf"
+    expect_contains: false
+    desired_contains: false
+    gap: policy
+    notes: "Abbreviations usually out of scope unless added to lexicon"
+
+  - id: gap_abbrev_stfu
+    group: evasion
+    text: "stfu"
+    expect_contains: true
+    expect_terms: [stfu]
+    notes: "Added in lexicon recall pass"
+
+  - id: gap_underscore_f_u_c_k
+    group: evasion
+    text: "f_u_c_k"
+    expect_contains: false
+    desired_contains: true
+    gap: needs_separated
+    notes: "Unlike a_s_s, f_u_c_k is not a lexicon literal; needs separated-run join"
